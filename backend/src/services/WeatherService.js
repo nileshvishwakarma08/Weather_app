@@ -1,14 +1,39 @@
 const axios = require("axios");
 const validateLocation = require("../utils/validateLocation");
 
+// ============================
+// Current Weather
+// ============================
 const fetchCurrentWeather = async (location) => {
+
+  console.log("Weather API Key:", process.env.OPENWEATHER_API_KEY);
+
+  // If the location is coordinates (latitude,longitude)
+  if (location.includes(",")) {
+
+    const [lat, lon] = location.split(",");
+
+    const response = await axios.get(
+      "https://api.openweathermap.org/data/2.5/weather",
+      {
+        params: {
+          lat: lat.trim(),
+          lon: lon.trim(),
+          appid: process.env.OPENWEATHER_API_KEY,
+          units: "metric",
+        },
+      }
+    );
+
+    return response.data;
+  }
+
+  // Otherwise validate city/location
   const validation = validateLocation(location);
 
   if (!validation.valid) {
     throw new Error(validation.error);
   }
-
-  console.log("Weather API Key:", process.env.OPENWEATHER_API_KEY);
 
   const response = await axios.get(
     "https://api.openweathermap.org/data/2.5/weather",
@@ -24,7 +49,11 @@ const fetchCurrentWeather = async (location) => {
   return response.data;
 };
 
+// ============================
+// 5-Day Forecast
+// ============================
 const fetch5DayForecast = async (lat, lon) => {
+
   if (!lat || !lon) {
     throw new Error("Latitude and longitude are required");
   }
@@ -44,12 +73,17 @@ const fetch5DayForecast = async (lat, lon) => {
   return response.data;
 };
 
+// ============================
+// YouTube Videos
+// ============================
 const fetchYouTubeVideos = async (location) => {
+
   if (!process.env.YOUTUBE_API_KEY) {
     return [];
   }
 
   try {
+
     const response = await axios.get(
       "https://www.googleapis.com/youtube/v3/search",
       {
@@ -71,14 +105,31 @@ const fetchYouTubeVideos = async (location) => {
       description: item.snippet.description,
       thumbnail: item.snippet.thumbnails.medium.url,
     }));
+
   } catch (error) {
     return [];
   }
 };
 
+// ============================
+// Google Maps Geocoding
+// ============================
 const fetchMapData = async (location) => {
+
   if (!process.env.GOOGLE_MAPS_API_KEY) {
     return null;
+  }
+
+  // Skip Geocoding if coordinates are passed
+  if (location.includes(",")) {
+
+    const [lat, lng] = location.split(",");
+
+    return {
+      lat: Number(lat),
+      lng: Number(lng),
+      formattedAddress: "Current Location",
+    };
   }
 
   const validation = validateLocation(location);
